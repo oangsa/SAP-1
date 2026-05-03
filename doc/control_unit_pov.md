@@ -53,10 +53,10 @@ Similar to
 | Mnemonic | Opcode (4‑bit) | Operation | Description |
 |----------|----------------|-----------|-------------|
 | `LDA`    | `0000` | `A ← MEM[addr]` | Load A from memory |
-| `ADD`    | `0001` | `A ← A + MEM[addr]` | Add memory to A |
-| `SUB`    | `0010` | `A ← A - MEM[addr]` | Subtract memory from A |
-| `ADDI`   | `0011` | `A ← A + imm` | Add immediate to A |
-| `SUBI`   | `0100` | `A ← A - imm` | Subtract immediate from A |
+| `ADDA`    | `0001` | `A ← A + MEM[addr]` | Add memory to A |
+| `SUBA`    | `0010` | `A ← A - MEM[addr]` | Subtract memory from A |
+| `ADDAI`   | `0011` | `A ← A + imm` | Add immediate to A |
+| `SUBAI`   | `0100` | `A ← A - imm` | Subtract immediate from A |
 | `STRA`   | `0101` | `MEM[addr] ← A` | Store A to memory |
 | `MOVAB`  | `0110` | `B ← A` | Copy A to B |
 | `LDB`    | `1000` | `B ← MEM[addr]` | Load B from memory |
@@ -86,7 +86,7 @@ The control unit produces the following signals (active‑high unless noted):
 | `A_in`   | 1 | Loads bus value into A register |
 | `B_in`   | 1 | Loads bus value into B register |
 | `ALU_out`| 1 | Enables ALU result onto the bus |
-| `ALU_op` | 2 | Selects ALU function: `00` = A + B, `01` = A - B |
+| `ALU_op` | 3 | Selects ALU function: `000` = A + B, `001` = A - B,  `010` = B - A, `011` = PASS A, `100` = Pass B, `101` = A x B, `110` = A / B `111` = A / B|
 | `state` | 4 | Current timing
 
 > **Design simplification:** Most designs hardwire ALU inputs to A and B registers. The ALU result must be stored via a register (A or B) before it can be used again.
@@ -242,7 +242,7 @@ These are internal to the memory module but worth listing as they are part of sy
 
 ---
 
-## 4. Control Unit to Module Signals (Already detailed earlier, but for completeness)
+## 4. Control Unit to Module Signals
 
 These are dedicated lines from control unit to each module; they are not shared on the bus.
 
@@ -274,7 +274,6 @@ These are dedicated lines from control unit to each module; they are not shared 
 | T2 | Address field (3) from IR | IR → bus → MAR | Get operand address from IR, load into MAR |
 | T3 | Memory data at addr 3 (value `0x45`) | Memory → bus → A | Load that value into A |
 ---
-
 
 
 
