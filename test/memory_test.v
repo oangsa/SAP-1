@@ -29,10 +29,15 @@ module tb_memory();
         MEM_rd = 0;
         address = 0;
         data_in = 0;
-        
+	        
         #10;
 
-        address = 4'd3; 
+        address = 4'd3;
+        data_in = 8'd4;
+        MEM_wr = 1;
+        #10;
+        MEM_wr = 0;
+        #10;
         MEM_rd = 1; 
         #10;
         if (data_out === 8'd4) $display("PASS: Address 3 is 4");
@@ -41,6 +46,11 @@ module tb_memory();
         #10;
 
         address = 4'd6;
+        data_in = 8'd5;
+        MEM_wr = 1;
+        #10;
+        MEM_wr = 0;
+        #10;
         MEM_rd = 1; 
         #10;
         if (data_out === 8'd5) $display("PASS: Address 6 is 5");
