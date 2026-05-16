@@ -17,7 +17,7 @@ module control_unit_test;
     wire        PC_out, PC_in, PC_inc, MAR_in, MEM_rd, MEM_wr, IR_in, IR_out;
     wire        A_in, B_in, ALU_out;
     wire [2:0]  ALU_op;
-    wire [3:0]  state;
+    wire [5:0]  state;
 
     control_unit uut (
         .clk    (clk),
@@ -54,7 +54,7 @@ module control_unit_test;
     endtask
 
     // Wait until state matches a value
-    task wait_state(input [3:0] expected);
+    task wait_state(input [5:0] expected);
         while (state !== expected) tick;
     endtask
 
@@ -62,7 +62,7 @@ module control_unit_test;
 
     task test_op;
         input [3:0]  op_val;
-        input [3:0]  expected_state;
+        input [5:0]  expected_state;
         input [5*8]   name;
         begin
             @(negedge clk);
@@ -90,20 +90,21 @@ module control_unit_test;
         $display("==============================================");
         $display("  State encoding:");
         $display("    T0=0 T1=1 T2=2");
-        $display("    LDA_st1=4 LDA_st2=5");
-        $display("    ADDA_st1=6 ADDA_st2=7 ADDA_st3=8");
-        $display("    SUBA_st1=9 SUBA_st2=10 SUBA_st3=11");
-        $display("    ADDAI_st1=12 ADDAI_st2=13");
-        $display("    SUBAI_st1=14 SUBAI_st2=15");
-        $display("    STRA_st=16");
+        $display("    LDA_st1=3  LDA_st2=4");
+        $display("    ADDA_st1=5 ADDA_st2=6 ADDA_st3=7");
+        $display("    SUBA_st1=8 SUBA_st2=9 SUBA_st3=10");
+        $display("    ADDAI_st1=11 ADDAI_st2=12");
+        $display("    SUBAI_st1=13 SUBAI_st2=14");
+        $display("    STRA_st1=15 STRA_st2=16");
         $display("    MOVAB_st=17");
         $display("    LDB_st1=18 LDB_st2=19");
         $display("    ADDB_st1=20 ADDB_st2=21 ADDB_st3=22");
         $display("    SUBB_st1=23 SUBB_st2=24 SUBB_st3=25");
         $display("    ADDBI_st1=26 ADDBI_st2=27");
         $display("    SUBBI_st1=28 SUBBI_st2=29");
-        $display("    STRB_st=30");
-        $display("    MOVBA_st=31");
+        $display("    STRB_st1=30 STRB_st2=31");
+        $display("    MOVBA_st=32");
+        $display("    ADDAB_st=33");
         $display("==============================================\n");
 
         // ---- Reset ----
@@ -113,34 +114,33 @@ module control_unit_test;
         reset = 0;
         $display("After reset: state=%d\n", state);
 
-        // ---- Run through T0->T1->T2 three times to test all opcodes ----
-        // Each opcode test needs: T0->T1->T2, then decode.
-        // We'll do a fetch cycle between tests: 3 ticks (T0, T1, T2)
+        // All opcodes decode from T2 to their first execute state.
+        // After testing an opcode, we run fetch cycles (T0->T1->T2)
+        // to return to T2 before setting the next opcode.
 
         // ====== LDA = 0000 ======
-        tick; tick;          // T0->T1->T2
-        test_op(4'b0000, 4, "LDA");     // -> LDA_st1 (4)
+        tick; tick;              // T0->T1->T2
+        test_op(4'b0000, 3, "LDA");     // -> LDA_st1 (3)
 
         // ====== ADDA = 0001 ======
-        tick; tick; tick;    // LDA_st1->LDA_st2->T0->T1... actually go back to T2
-        wait_state(2);       // wait until T2
-        test_op(4'b0001, 6, "ADDA");    // -> ADDA_st1 (6)
+        wait_state(2);           // finish LDA exec then fetch back to T2
+        test_op(4'b0001, 5, "ADDA");    // -> ADDA_st1 (5)
 
         // ====== SUBA = 0010 ======
         wait_state(2);
-        test_op(4'b0010, 9, "SUBA");    // -> SUBA_st1 (9)
+        test_op(4'b0010, 8, "SUBA");    // -> SUBA_st1 (8)
 
         // ====== ADDAI = 0011 ======
         wait_state(2);
-        test_op(4'b0011, 12, "ADDAI");  // -> ADDAI_st1 (12)
+        test_op(4'b0011, 11, "ADDAI");  // -> ADDAI_st1 (11)
 
         // ====== SUBAI = 0100 ======
         wait_state(2);
-        test_op(4'b0100, 14, "SUBAI");  // -> SUBAI_st1 (14)
+        test_op(4'b0100, 13, "SUBAI");  // -> SUBAI_st1 (13)
 
         // ====== STRA = 0101 ======
         wait_state(2);
-        test_op(4'b0101, 16, "STRA");   // -> STRA_st (16)
+        test_op(4'b0101, 15, "STRA");   // -> STRA_st1 (15)
 
         // ====== MOVAB = 0110 ======
         wait_state(2);
@@ -168,11 +168,15 @@ module control_unit_test;
 
         // ====== STRB = 1101 ======
         wait_state(2);
-        test_op(4'b1101, 30, "STRB");   // -> STRB_st (30)
+        test_op(4'b1101, 30, "STRB");   // -> STRB_st1 (30)
 
         // ====== MOVBA = 1110 ======
         wait_state(2);
-        test_op(4'b1110, 31, "MOVBA");  // -> MOVBA_st (31)
+        test_op(4'b1110, 32, "MOVBA");  // -> MOVBA_st (32)
+
+        // ====== ADDAB = 1111 ======
+        wait_state(2);
+        test_op(4'b1111, 33, "ADDAB");  // -> ADDAB_st (33)
 
         // ====== Default = 0111 ======
         wait_state(2);
@@ -182,7 +186,7 @@ module control_unit_test;
         $display("\n==============================================");
         $display("  RESULTS: %0d PASS, %0d FAIL", pass, fail);
         $display("==============================================");
-        $stop;
+        $finish;
     end
 
     initial begin
