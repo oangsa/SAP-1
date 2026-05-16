@@ -40,23 +40,26 @@ module alu_test;
 		a = 8'h09; b = 8'h04; op = 3'b001; check_result(8'h05, "SUB basic");
 		a = 8'h00; b = 8'h01; op = 3'b001; check_result(8'hFF, "SUB underflow wraparound");
 
-		// AND
-		a = 8'hAA; b = 8'hCC; op = 3'b010; check_result(8'h88, "AND");
+		// B - A
+		a = 8'h04; b = 8'h09; op = 3'b010; check_result(8'h05, "B minus A");
+		a = 8'h01; b = 8'h00; op = 3'b010; check_result(8'hFF, "B minus A wraparound");
 
-		// OR
-		a = 8'hA0; b = 8'h0F; op = 3'b011; check_result(8'hAF, "OR");
+		// PASS A
+		a = 8'hA0; b = 8'h0F; op = 3'b011; check_result(8'hA0, "PASS A");
 
-		// XOR
-		a = 8'hF0; b = 8'hAA; op = 3'b100; check_result(8'h5A, "XOR");
+		// PASS B
+		a = 8'hF0; b = 8'hAA; op = 3'b100; check_result(8'hAA, "PASS B");
 
-		// NOT (unary on A)
-		a = 8'h0F; b = 8'h00; op = 3'b101; check_result(8'hF0, "NOT A");
+		// MUL
+		a = 8'd3; b = 8'd4; op = 3'b101; check_result(8'd12, "MUL");
 
-		// PASS (A pass-through)
-		a = 8'h3C; b = 8'hC3; op = 3'b110; check_result(8'h3C, "PASS A");
+		// A / B
+		a = 8'd12; b = 8'd4; op = 3'b110; check_result(8'd3, "A divided by B");
+		a = 8'd12; b = 8'd0; op = 3'b110; check_result(8'd0, "A divided by zero");
 
-		// DEFAULT
-		a = 8'h12; b = 8'h34; op = 3'b111; check_result(8'h00, "DEFAULT");
+		// B / A
+		a = 8'd3; b = 8'd12; op = 3'b111; check_result(8'd4, "B divided by A");
+		a = 8'd0; b = 8'd12; op = 3'b111; check_result(8'd0, "B divided by zero");
 
 		if (errors == 0) begin
 			$display("ALU TEST RESULT: PASS");

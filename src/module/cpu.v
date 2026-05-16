@@ -116,42 +116,14 @@ module cpu (
  
     // -------------------------------------------------------
     //  ALU
-    //    The ALU opcode mapping used by control_unit:
-    //      A_add_B = 3'b000  → alu op 000 (a+b)   ✓
-    //      A_sub_B = 3'b001  → alu op 001 (a-b)   ✓
-    //      B_sub_A = 3'b010  → alu op 001 (a-b)   * see note
-    //      Pass_A  = 3'b011  → alu op 110 (pass a)* remapped below
-    //      Pass_B  = 3'b100  → alu op 110 (pass b)* remapped below
-    //      A_mul_B = 3'b101  → custom (not in alu) * extend if needed
-    //      A_div_B = 3'b110  → custom              * extend if needed
-    //      B_div_A = 3'b111  → custom              * extend if needed
-    //
-    //  NOTE: alu.v uses a different encoding than control_unit.
-    //  We add a small mapping layer here so both files stay untouched.
+    //    alu.v now uses the same opcode encoding as control_unit.v,
+    //    so the control signal can be wired through directly.
     // -------------------------------------------------------
-    reg [2:0] alu_op_mapped;
- 
-    always @(*) begin
-        case (ALU_op)
-            3'b000: alu_op_mapped = 3'b000; // A + B
-            3'b001: alu_op_mapped = 3'b001; // A - B
-            3'b010: alu_op_mapped = 3'b001; // B - A  → feed swapped (see swap below)
-            3'b011: alu_op_mapped = 3'b110; // Pass A
-            3'b100: alu_op_mapped = 3'b110; // Pass B → feed B as 'a' (see swap)
-            // Mul/Div – extend alu.v to support these; placeholder → 0
-            default: alu_op_mapped = 3'b000;
-        endcase
-    end
- 
-    // For B_sub_A (op=010) swap inputs so alu computes B-A correctly
-    // For Pass_B  (op=100) put B on the 'a' input so Pass_A logic works
-    wire [7:0] alu_in_a = (ALU_op == 3'b010 || ALU_op == 3'b100) ? B_wire : A_wire;
-    wire [7:0] alu_in_b = (ALU_op == 3'b010 || ALU_op == 3'b100) ? A_wire : B_wire;
  
     alu ALU (
-        .a   (alu_in_a),
-        .b   (alu_in_b),
-        .op  (alu_op_mapped),
+        .a   (A_wire),
+        .b   (B_wire),
+        .op  (ALU_op),
         .res (alu_result)
     );
  

@@ -15,8 +15,8 @@ Against the current assignment spec, the main problems are in `src/module/cpu.v`
 3. The CPU currently fails its own top-level execution test.
    Running `test/tb_cpu.v` ends with `A register = 3 (expected 9)`, so the current CPU top-level module does not correctly execute the simple `LDA 3` followed by `ADDA 6` flow.
 
-4. The CPU inherits the current control-unit bugs directly.
-   `src/module/cpu.v` wires in `src/module/control_unit.v` as-is, so the broken state-width handling and ALU-op mismatch in the control unit also affect the CPU top-level behavior.
+4. The CPU inherits the current control-unit state bug directly.
+   `src/module/cpu.v` wires in `src/module/control_unit.v` as-is, so the broken state-width handling in the control unit also affects the CPU top-level behavior.
 
 5. `test/tb_cpu.v` is compensating for broken PC behavior.
    The testbench places the second instruction at `ram[4]` instead of the next sequential address because the current CPU PC path increments by 4. This means the test is validating the current broken behavior rather than the assignment-spec behavior.
