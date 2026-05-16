@@ -2,11 +2,9 @@
 //  cpu.v  –  Top-level module (SAP-1)
 //
 //  Instantiates and wires:
-//    control_unit, alu, bus_system, memory, reg_A, reg_B
+//    control_unit, pc, alu, bus_system, memory, reg_A, reg_B
 //
 //  Internal registers handled here:
-//    • PC  (program counter) – driven by control_unit internally,
-//          but its *output value* is exposed to the bus via PC_out
 //    • MAR (memory address register)
 //    • IR  (instruction register)
 // =============================================================
@@ -19,7 +17,7 @@ module cpu (
     output wire [7:0] A_data,
     output wire [7:0] B_data,
     output wire [7:0] IR_reg,
-    output wire [3:0] state_out
+    output wire [5:0] state_out
 );
  
     // -------------------------------------------------------
@@ -58,24 +56,18 @@ module cpu (
     assign IR_reg = IR;   // expose for debug
  
     // -------------------------------------------------------
-    //  PC output to bus
-    //    control_unit manages the PC counter internally.
-    //    It exposes a PC_out control signal; we need the
-    //    actual PC *value*.  Because the PC lives inside
-    //    control_unit, we re-use the MAR value after T0
-    //    (where MAR already captured PC).  Alternatively,
-    //    expose PC from control_unit.  Here we expose it
-    //    as a wire driven by a small helper register below.
+    //  Program Counter
     // -------------------------------------------------------
-    reg  [7:0] PC_val;   // shadow of the PC inside control_unit
- 
-    // We reconstruct PC_val by watching PC_inc (same logic as in CU)
-    always @(posedge clk or posedge reset) begin
-        if (reset)
-            PC_val <= 8'b0;
-        else if (PC_inc)
-            PC_val <= PC_val + 4;   // matches control_unit increment
-    end
+    wire [3:0] PC_val;
+
+    pc PC (
+        .clk       (clk),
+        .reset     (reset),
+        .load      (PC_in),
+        .increment (PC_inc),
+        .bus_in    (bus),
+        .pc_out    (PC_val)
+    );
  
     // -------------------------------------------------------
     //  Data wires between modules
@@ -96,7 +88,7 @@ module cpu (
         .MEM_rd   (MEM_rd),
         .IR_out   (IR_out),
         .ALU_out  (ALU_out),
-        .pc_data  (PC_val),
+        .pc_data  ({4'b0000, PC_val}),
         .mem_data (mem_data_out),
         .ir_data  (ir_bus_data),
         .alu_data (alu_result),

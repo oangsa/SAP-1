@@ -5,9 +5,8 @@
 // Tests opcode decode by verifying state transitions.
 //
 // Timing model:
-//   The control unit uses a single always @(posedge clk) block.
-//   Outputs are blocking (=), state is non-blocking (<=).
-//   After posedge: state = next state, outputs = old state's controls.
+//   The control unit has a clocked state register and combinational outputs.
+//   After posedge: state = next state, outputs settle for the new state.
 // =============================================================
 
 module control_unit_test;

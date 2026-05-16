@@ -1,9 +1,9 @@
 // =============================================================
 //  tb_cpu.v  –  Testbench for SAP-1 top-level cpu module
 //
-//  Tests:
-//    1. LDA 3   → A should become 4  (ram[3]=4)
-//    2. ADD 6   → A should become 9  (ram[6]=5, 4+5=9)
+//  Tests ARM-like memory instructions:
+//    1. LDR A, [3]; ADD A, [6] -> A should become 9  (4 + 5)
+//    2. LDR A, [4]; ADD A, [5] -> A should become 19 (7 + 12)
 // =============================================================
 
 `timescale 1ns/1ps
@@ -13,7 +13,7 @@ module tb_cpu;
     reg  clk, reset;
     wire [7:0] bus;
     wire [7:0] A_data, B_data, IR_reg;
-    wire [3:0] state_out;
+    wire [5:0] state_out;
 
     // Instantiate DUT
     cpu DUT (
@@ -30,45 +30,84 @@ module tb_cpu;
     initial clk = 0;
     always #5 clk = ~clk;
 
-    // ---- Load test program into memory ----
-    // Instruction encoding:
-    //   LDA  addr  = opcode 0000 | addr[3:0]  → 8'h03  (LDA  address 3)
-    //   ADDA addr  = opcode 0001 | addr[3:0]  → 8'h16  (ADDA address 6)
-    initial begin
-        // Pre-load instructions directly into memory module
-        // ram[0] = LDA 3  = 0000_0011 = 8'h03
-        // ram[4] = ADD 6  = 0001_0110 = 8'h16
-        // (PC increments by 4 each fetch)
-        DUT.MEM.ram[0] = 8'h03;   // LDA  3
-        DUT.MEM.ram[4] = 8'h16;   // ADDA 6
-        // Data (already set in memory.v initial block, but set again for safety)
-        DUT.MEM.ram[3] = 8'd4;
-        DUT.MEM.ram[6] = 8'd5;
-    end
+    integer i;
+    integer errors;
+
+    task clear_memory;
+        begin
+            for (i = 0; i < 16; i = i + 1)
+                DUT.MEM.ram[i] = 8'h00;
+        end
+    endtask
+
+    task reset_cpu;
+        begin
+            reset = 1;
+            @(posedge clk); #1;
+            @(posedge clk); #1;
+            reset = 0;
+        end
+    endtask
+
+    task run_ldr_add_case;
+        input [511:0] name;
+        input [3:0] load_addr;
+        input [7:0] load_value;
+        input [3:0] add_addr;
+        input [7:0] add_value;
+        input [7:0] expected;
+        begin
+            clear_memory;
+
+            // Local ISA encoding:
+            //   LDR A, [addr] == LDA addr  == 0000_addr
+            //   ADD A, [addr] == ADDA addr == 0001_addr
+            DUT.MEM.ram[0] = {4'h0, load_addr};
+            DUT.MEM.ram[1] = {4'h1, add_addr};
+            DUT.MEM.ram[load_addr] = load_value;
+            DUT.MEM.ram[add_addr] = add_value;
+
+            reset_cpu;
+
+            // Run through LDA and ADDA, then check before data bytes are fetched as instructions.
+            repeat (12) @(posedge clk);
+            #1;
+
+            $display("=== %0s ===", name);
+            $display("LDR A, [%0d] = %0d; ADD A, [%0d] = %0d", load_addr, load_value, add_addr, add_value);
+            $display("A register = %0d (expected %0d)", A_data, expected);
+
+            if (A_data === expected)
+                $display("PASS: %0s", name);
+            else begin
+                $display("FAIL: %0s", name);
+                errors = errors + 1;
+            end
+        end
+    endtask
 
     // ---- Stimulus ----
     initial begin
         $dumpfile("tb_cpu.vcd");
         $dumpvars(0, tb_cpu);
 
-        // Reset for 2 cycles
-        reset = 1;
-        @(posedge clk); #1;
-        @(posedge clk); #1;
         reset = 0;
+        errors = 0;
 
-        // Run for enough cycles to complete both instructions
-        // Each instruction takes ~3-4 clock cycles; give 40 cycles total
-        repeat (40) @(posedge clk);
+        run_ldr_add_case("ARM example: LDR A, [3]; ADD A, [6]",
+                         4'd3, 8'd4,
+                         4'd6, 8'd5,
+                         8'd9);
 
-        // ---- Check results ----
-        $display("=== SAP-1 Simulation Results ===");
-        $display("A register = %0d (expected 9)", A_data);
-        $display("B register = %0d", B_data);
-        if (A_data === 8'd9)
-            $display("PASS: LDA 3 + ADD 6 => A = 9");
+        run_ldr_add_case("Second case: LDR A, [4]; ADD A, [5]",
+                         4'd4, 8'd7,
+                         4'd5, 8'd12,
+                         8'd19);
+
+        if (errors == 0)
+            $display("CPU LDR/ADD TEST RESULT: PASS");
         else
-            $display("FAIL: A = %0d (expected 9)", A_data);
+            $display("CPU LDR/ADD TEST RESULT: FAIL (%0d errors)", errors);
 
         $finish;
     end
