@@ -4,6 +4,8 @@
 
 This project implements a simplified SAP-1 (Simple-As-Possible-1) computer architecture using Verilog. The design is an 8‑bit, single‑bus, hardwired system with a 16‑byte memory. It is capable of executing basic load, arithmetic, store, and move operations.
 
+> **Current repository note:** The program counter logic lives in the standalone `src/module/pc.v` module. The control unit in `src/module/control_unit.v` only generates `PC_out`, `PC_in`, and `PC_inc`; it does not contain a second internal PC register. A full top-level datapath that wires all modules together has not been finalized in `src/main.v` yet.
+
 The following data flow diagram illustrates the interconnection between components:
 
 ![Data flow](DataPath.png)
@@ -90,6 +92,8 @@ The control unit produces the following signals (active‑high unless noted):
 | `state` | 4 | Current timing
 
 > **Design simplification:** Most designs hardwire ALU inputs to A and B registers. The ALU result must be stored via a register (A or B) before it can be used again.
+>
+> **Implementation note:** In this repository, these PC-related signals are outputs of the control unit only. The actual program counter state is expected to be stored in `pc.v`, not inside `control_unit.v`.
 
 ---
 
@@ -261,6 +265,8 @@ These are dedicated lines from control unit to each module; they are not shared 
 | `MEM_rd` | Control unit | Memory | Enable memory read onto bus |
 | `MEM_wr` | Control unit | Memory | Write bus value to memory |
 
+> **Integration note:** The table above describes the intended datapath connections. At the moment, `src/main.v` is not acting as the completed top-level CPU wrapper yet, so these links are architectural expectations rather than fully assembled top-level wiring in the repo.
+
 ---
 
 ## 5. Example Data Flow for `LDA 3` (Concrete Walk)
@@ -274,7 +280,6 @@ These are dedicated lines from control unit to each module; they are not shared 
 | T2 | Address field (3) from IR | IR → bus → MAR | Get operand address from IR, load into MAR |
 | T3 | Memory data at addr 3 (value `0x45`) | Memory → bus → A | Load that value into A |
 ---
-
 
 
 
