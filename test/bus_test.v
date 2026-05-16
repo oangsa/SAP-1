@@ -38,29 +38,42 @@ module tb_bus_system();
         ir_data  = 8'h33; 
         alu_data = 8'h44; 
         
-        #10; 
+        #10;
+      	if (bus_data === 8'hzz) $display("PASS: Idle Bus (High-Z)"); else $display("ERROR: Idle");
+      
         PC_out = 1;
-        #10; 
-        PC_out = 0;
-        
-        #10; 
+        #10;
+      	if (bus_data === 8'h11) $display("PASS: PC_out"); else $display("ERROR: PC_out");
+        PC_out = 0; 
+      	#10;
+      
         MEM_rd = 1;
         #10; 
+      	if (bus_data === 8'h22) $display("PASS: MEM_rd"); else $display("ERROR: MEM_rd");
         MEM_rd = 0;
-        
       	#10;
+      
         IR_out = 1;
         #10;
+      	if (bus_data === 8'h33) $display("PASS: IR_out"); else $display("ERROR: IR_out");
         IR_out = 0;
-      
         #10;
-        ALU_out = 1;
-        #10; 
-        ALU_out = 0;
       
-     
+        ALU_out = 1;
+        #10;
+      	if (bus_data === 8'h44) $display("PASS: ALU_out"); else $display("ERROR: ALU_out");
+        ALU_out = 0;
       	#10;
         
+      	PC_out = 1; 
+      	MEM_rd = 1; 
+      	#10;
+        if (bus_data === 8'hxx) $display("PASS: Collision Detected (X)"); 
+        else $display("ERROR: Collision Not Detected");
+        PC_out = 0; 
+      	MEM_rd = 0;
+      
+      	$display("--- Bus Verification Completed ---");
         $finish; 
     end
 endmodule

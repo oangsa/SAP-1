@@ -1,7 +1,8 @@
 module memory(
     input [3:0] address,   
     input clk,                  
-    input MEM_wr,          
+    input MEM_wr,   
+    input MEM_rd,       
     input [7:0] data_in,      
     output [7:0] data_out      
 );
@@ -9,16 +10,14 @@ module memory(
 
     initial begin
         integer i;
-      for (i = 0; i < 16; i = i + 1) ram[i] = 8'h00; 
-        ram[3] = 8'd4; 
-        ram[6] = 8'd5; 
+        for (i = 0; i < 16; i = i + 1)
+            ram[i] = 8'h00;
     end
 
-  always @(posedge clk) begin
+    always @(posedge clk) begin
         if (MEM_wr)
             ram[address] <= data_in;
     end
 
-    assign data_out = ram[address];
-
+    assign data_out = (MEM_rd) ? ram[address] : 8'hzz;
 endmodule

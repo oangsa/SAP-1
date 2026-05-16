@@ -110,6 +110,7 @@ module cpu (
         .address  (MAR),
         .clk      (clk),
         .MEM_wr   (MEM_wr),
+        .MEM_rd   (MEM_rd),
         .data_in  (bus),
         .data_out (mem_data_out)
     );
