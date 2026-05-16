@@ -7,9 +7,6 @@ module control_unit (
     output reg [3:0] state        
 );
 
-    // PC register (internal)
-    reg [3:0] PC;
-
     // Opcode format 
     localparam OP_LDA   = 4'b0000, // load A
                 OP_ADDA  = 4'b0001, // add A with value in memory
@@ -70,13 +67,6 @@ module control_unit (
                 A_div_B = 3'b110,
                 B_div_A = 3'b111;
     
-    /* -------- PC register --------- */
-
-    always @(posedge clk) begin
-        if (reset) PC <= 0;
-        else if (PC_inc) PC <= PC + 4;   // dedicated increment
-    end 
-
     /* ------- State machine ------ */
     always @(posedge clk or posedge reset) begin
     
@@ -330,5 +320,4 @@ module control_unit (
         end
     end
 endmodule
-
 
